@@ -3,7 +3,7 @@ package models
 import(
    "database/sql"
    _ "github.com/go-sql-driver/mysql"
-   "github.com/astaxie/beedb"
+   "github.com/astaxie/beego/orm"
    "time"
 )
 
@@ -14,35 +14,46 @@ type Blog struct{
 	Created time.Time
 }
 
-func GetLink() beedb.Model {
-	db, err := sql.Open("mysql", "root:root@/sel")
+func init() {
+	orm.RegisterDriver("mysql", orm.DR_MySQL)
+	orm.RegisterDataBase("default", "mysql", "root:root@/sel")
+	orm.RegisterModel(new(Blog))
+
+	name := "default"
+	force := false
+	verbose := false
+
+	err := orm.RunSyncdb(name, force, verbose)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
-	orm := beedb.New(db)
-	return orm
+}
+
+func GetOrm() orm.Ormer {
+	o := orm.NewOrm()
+	return o
 }
 
 func GetAll() (blogs []Blog) {
-	db := GetLink()
-	db.FindAll(&blogs)
+	db := GetOrm()
+	db.QueryTable("blog").All(&blogs)
     return
 }
 
 func GetBlog(id int) (blog Blog) {
-	db := GetLink()
-	db.Where("id=?", id).Find(&blog)
+	db := GetOrm()
+	db.QueryTable("blog").Filter("id", id).One(&blog)
 	return
 }
 
 func SaveBlog(blog Blog) {
-	db := GetLink()
-	db.Save(&blog)
+	db := GetOrm()
+	db.Insert(&blog)
 	return 
 }
 
 func DelBlog(id int) {
-	db := GetLink()
-	db.SetTable("blog").Where("id=?", id).DeleteRow()
+	db := GetOrm()
+	db.QueryTable("blog").Filter("id", id).Delete()
 	return
 }
